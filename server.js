@@ -13,22 +13,6 @@ const con = mysql.createConnection({
     database: 'ecogreenpath_db'
 })
 
-// app.post('/register', (req, res) => {
-//     try {
-//         const {username, firstName, lastName, phoneNumber, email, password, password2, birth} = req.body
-
-//         if(password == password2){
-//             const userID = uuidv4()
-//             const createdAt = new Date();
-//             con.query(`INSERT INTO user_table(user_id, username, email, password, phone_numberm, birth, firstName, lastName, createdAt) 
-//                         VALUES (${userID}, ${username}, ${email}, ${password}, ${phoneNumber}, ${birth}, ${firstName}, ${lastName}, ${createdAt})`)
-//     }
-//         res.status(201).json({ message: 'Registration successful' })
-//     } catch (error) {
-//         res.status(500).json({ error: 'Internal server error' })
-//     }
-// })
-
 // register =================================================
 app.post('/register', (req, res) => {
     const {
@@ -91,14 +75,24 @@ app.post('/register', (req, res) => {
         })
     })
 })
-// app.post('/login', (req, res) => {
-//     const {username, password} = req.body
-
-//     con.query('SELECT * FROM user_table WHERE username = ?', [username], (res, err) => {
-        
-
-//     })
-// })
+app.post('/login', (req, res) => {
+    const {username, password} = req.body
+    const secret = 'this is secret'
+    const token = jwt.sign(username, secret)
+    console.log(token)
+    con.query(`SELECT * FROM user_table WHERE username = ${mysql.escape(username)}`, (err, result) => {
+        if(result[0].username == username && result[0].password == password) {
+            res.status(200).json({
+                message: {
+                    status : 'login success',
+                    username,
+                    password,
+                    token
+                }
+            })
+        }
+    })
+})
 
 
 
