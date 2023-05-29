@@ -1,4 +1,4 @@
 node_modules
-.eslintcache
+.eslintrc.js
 package-lock.json
 server testing.js
