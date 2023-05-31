@@ -102,11 +102,6 @@ app.get('/questionnaire', (req, res) => {
     }) 
 })
 
-//questionnaire responses
-app.get('/questionnaire/responses', (req, res) => {
-    
-})
-
 //login 
 const secret = 'this is secret'
 app.post('/login', (req, res) => {
@@ -139,11 +134,12 @@ app.post('/login', (req, res) => {
             })
         }
     })
-    console.log(secret)
 })
 
-// access the protected page
+//homepage
+app.get('/homepage', (req, res) => {
 
+})
 
 
 
