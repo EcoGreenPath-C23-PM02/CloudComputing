@@ -15,7 +15,7 @@ const con = mysql.createConnection({
 
 // register 
 app.post('/register', (req, res) => {
-    const {username, firstName, lastName, phoneNumber, email, password, password2, birth} = req.body
+    const {username, firstName, lastName, phoneNumber, email, password, birth} = req.body
     // checking if the username exist
     con.query(`SELECT * FROM user_table WHERE username = ${mysql.escape(username)}`, (err, result) => {
         if(err){
@@ -26,13 +26,6 @@ app.post('/register', (req, res) => {
         }if(result.length > 0){
             res.status(400).json({
                 message: 'Username already exist'
-            })
-            return
-        }
-        // // Validate the password
-        if (password !== password2) {
-            res.status(400).json({
-                error: 'The passwords do not match'
             })
             return
         }
@@ -66,30 +59,9 @@ app.post('/register', (req, res) => {
     })
 })
 
-//questionnaire for admin 
-app.post('/questionnaire', (req, res) => {
-    const quisioner_id = uuidv4()
-    const {question, choice} = req.body
-    const choicesString = JSON.stringify(choice)
-    con.query(`INSERT INTO quisioner_question VALUES (${mysql.escape(quisioner_id)}, ${mysql.escape(question)}, ${mysql.escape(choicesString)})`, (err, result) =>{
-        if(err){
-            res.status(500).json({
-                message:err
-            })
-        }if(result){
-            res.status(200).json({
-                message:'input data successfully',
-                quisioner_id,
-                question,
-                choicesString
-            })
-        }
-    })
-})
-
 //questionnaire
-app.get('/questionnaire', (req, res) => {
-    con.query('SELECT * FROM quisioner_question', (err, result) => {
+app.get('/questionnaire/:id', (req, res) => {
+    con.query('SELECT * FROM questionnaire', (err, result) => {
         if(err){
             res.status(500).json({
                 message:err
@@ -99,7 +71,23 @@ app.get('/questionnaire', (req, res) => {
                 data : result
             })
         }
-    }) 
+    })
+})
+app.post('/questionnaire/:id', (req, res) => {
+    const id = req.params.id
+    const {responses} = req.body
+    con.query(`INSERT INTO  questionnaire_responses VALUES (${mysql.escape(id)}, ${mysql.escape(responses)})`, (err, result) =>{
+        if(err){
+            res.status(500).json({
+                message:err
+            })
+        }if(result){
+            console.log(result)
+            res.status(200).json({
+                data : 'data added successfully'
+            })
+        }
+    })
 })
 
 //login 
@@ -137,12 +125,98 @@ app.post('/login', (req, res) => {
 })
 
 //homepage
-app.get('/homepage', (req, res) => {
-
+app.get('/homepage/:id', (req, res) => {
+    const {id} = req.params
+    con.query(`SELECT * FROM questionnaire_responses WHERE user_id = ${mysql.escape(id)}`, (err, result) => {
+        if(err){
+            res.status(500).json({  
+                error: err
+            })
+        }if(result){
+            res.status(200).json({ 
+                data:result
+            })
+        }
+    })
 })
 
+//quest
+app.get('/quest', (req, res) => {
+    con.query('SELECT * FROM quest_list', (err, result) =>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                data: result
+            })
+        }
+    })
+})
+app.post('/quest/:id', (req, res) => {
+    const id = req.params.id
+    const {quest_id} = req.body
+    con.query(`INSERT INTO user_quest VALUES (${mysql.escape(id)}, ${mysql.escape(quest_id)})`, (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                message: 'data added successfully'
+            })
+        }
+    })
+})
 
+//questionnaire for admin 
+app.post('/questionnaire', (req, res) => {
+    const quisioner_id = uuidv4()
+    const {question, choice} = req.body
+    const choicesString = JSON.stringify(choice)
+    con.query(`INSERT INTO questionnaire VALUES (${mysql.escape(quisioner_id)}, ${mysql.escape(question)}, ${mysql.escape(choicesString)})`, (err, result) =>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                message:'data added successfully',
+                quisioner_id,
+                question,
+                choicesString
+            })
+        }
+    })
+})
 
+//quest for admin
+app.post('/quest', (req, res)=>{
+    const quest_id = generateShortId()
+    const {quest, point} = req.body
+    con.query(`INSERT INTO quest_list VALUES (${mysql.escape(quest_id)}, ${mysql.escape(quest)}, ${mysql.escape(point)})`, (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                message:'data added successfully',
+                quest_id,
+                quest,
+                point
+            })
+        }
+    })
+})
+
+const generateShortId = () => {
+    const uuid = uuidv4()
+    const shortId = uuid.split('-')[0]
+    const eightDigitId = shortId.substring(0, 8)
+    return eightDigitId
+}
 app.listen(3000, () => {
     console.log('Server start on http://localhost:3000')
 })
