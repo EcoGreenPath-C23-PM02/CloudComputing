@@ -13,20 +13,10 @@ const con = mysql.createConnection({
     database: 'ecogreenpath_db'
 })
 
-// register =================================================
+// register 
 app.post('/register', (req, res) => {
-    const {
-        username,
-        firstName,
-        lastName,
-        phoneNumber,
-        email,
-        password,
-        password2,
-        birth,
-    } = req.body
-
-    // checking if the username exist =================================
+    const {username, firstName, lastName, phoneNumber, email, password, password2, birth} = req.body
+    // checking if the username exist
     con.query(`SELECT * FROM user_table WHERE username = ${mysql.escape(username)}`, (err, result) => {
         if(err){
             res.status(500).json({
@@ -69,30 +59,90 @@ app.post('/register', (req, res) => {
                     lastName,
                     phoneNumber,
                     birth,
-                    createdAt,
+                    createdAt
                 }
             })
         })
     })
 })
-app.post('/login', (req, res) => {
-    const {username, password} = req.body
-    const secret = 'this is secret'
-    const token = jwt.sign(username, secret)
-    console.log(token)
-    con.query(`SELECT * FROM user_table WHERE username = ${mysql.escape(username)}`, (err, result) => {
-        if(result[0].username == username && result[0].password == password) {
+
+//questionnaire for admin 
+app.post('/questionnaire', (req, res) => {
+    const quisioner_id = uuidv4()
+    const {question, choice} = req.body
+    const choicesString = JSON.stringify(choice)
+    con.query(`INSERT INTO quisioner_question VALUES (${mysql.escape(quisioner_id)}, ${mysql.escape(question)}, ${mysql.escape(choicesString)})`, (err, result) =>{
+        if(err){
+            res.status(500).json({
+                message:err
+            })
+        }if(result){
             res.status(200).json({
-                message: {
-                    status : 'login success',
-                    username,
-                    password,
-                    token
-                }
+                message:'input data successfully',
+                quisioner_id,
+                question,
+                choicesString
             })
         }
     })
 })
+
+//questionnaire
+app.get('/questionnaire', (req, res) => {
+    con.query('SELECT * FROM quisioner_question', (err, result) => {
+        if(err){
+            res.status(500).json({
+                message:err
+            })
+        }if(result){
+            res.status(200).json({
+                data : result
+            })
+        }
+    }) 
+})
+
+//questionnaire responses
+app.get('/questionnaire/responses', (req, res) => {
+    
+})
+
+//login 
+const secret = 'this is secret'
+app.post('/login', (req, res) => {
+    const {username, password} = req.body
+    con.query(`SELECT * FROM user_table WHERE username = ${mysql.escape(username)}`, (err, result) => {
+        if(err){
+            res.status(500).json({
+                error: 'the server encountered an unexpected condition that prevented it from fulfilling the request'
+            })
+            return
+        }else if(result.length !== 0){
+            if(result[0].username == username && result[0].password == password) {
+                const token = jwt.sign(username, secret)
+                res.status(200).json({
+                    message: {
+                        status : 'login success',
+                        username,
+                        password,
+                        token
+                    }
+                })
+            }else{
+                res.status(401).json({
+                    message:'wrong password'
+                })
+            }
+        }else{
+            res.status(401).json({
+                message:'login failed'
+            })
+        }
+    })
+    console.log(secret)
+})
+
+// access the protected page
 
 
 
