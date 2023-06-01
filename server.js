@@ -60,7 +60,7 @@ app.post('/register', (req, res) => {
 })
 
 //questionnaire
-app.get('/questionnaire/:id', (req, res) => {
+app.get('/questionnaire', (req, res) => {
     con.query('SELECT * FROM questionnaire', (err, result) => {
         if(err){
             res.status(500).json({
@@ -74,7 +74,7 @@ app.get('/questionnaire/:id', (req, res) => {
     })
 })
 app.post('/questionnaire/:id', (req, res) => {
-    const id = req.params.id
+    const {id} = req.params
     const {responses} = req.body
     con.query(`INSERT INTO  questionnaire_responses VALUES (${mysql.escape(id)}, ${mysql.escape(responses)})`, (err, result) =>{
         if(err){
@@ -124,6 +124,36 @@ app.post('/login', (req, res) => {
     })
 })
 
+//profile
+app.get('/profile/:id', (req, res) => {
+    const {id} = req.params
+    con.query(`SELECT * FROM user_table WHERE user_id = ${mysql.escape(id)}`, (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                data:result
+            })
+        }
+    })
+})
+app.put('/profile/:id', (req, res) => {
+    const {id} = req.params
+    const {email, password, phone_number, profile_picture} = req.body
+    con.query(`UPDATE user_table SET email = ${mysql.escape(email)}, password = ${mysql.escape(password)}, phone_number = ${mysql.escape(phone_number)}, profile_picture = ${mysql.escape(profile_picture)} WHERE user_id = ${mysql.escape(id)}`, (err, result) => {
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                message:'update data successfully'
+            })
+        }
+    })
+})
 //homepage
 app.get('/homepage/:id', (req, res) => {
     const {id} = req.params
@@ -170,6 +200,99 @@ app.post('/quest/:id', (req, res) => {
     })
 })
 
+//maps
+app.get('/maps', (req, res) =>{
+    con.query('SELECT * FROM village', (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                data:result
+            })
+        }
+    })
+})
+app.get('/maps/:id', (req, res)=>{
+    const {id} = req.params
+    con.query(`SELECT * FROM village WHERE village_id= ${mysql.escape(id)}`, (err, result) => {
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                data:result
+            })
+        }
+    })
+})
+app.get('/maps/:id/activities', (req, res)=>{
+    const {id} = req.params
+    con.query(`SELECT * FROM detail_activity WHERE village_id =${mysql.escape(id)}`, (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                data:result
+            })
+        }
+    })
+})
+
+//maps for admin
+app.post('/maps', (req, res)=>{
+    const village_id = generateShortId()
+    const {village_lat, village_lng, name, desc, province, regency, district, social_media, contact, pic} = req.body
+    con.query(`INSERT INTO village VALUES (${mysql.escape(village_id)}, ${mysql.escape(village_lat)}, ${mysql.escape(village_lng)}, ${mysql.escape(name)}, ${mysql.escape(desc)}, ${mysql.escape(province)}, ${mysql.escape(regency)}, ${mysql.escape(district)}, ${mysql.escape(social_media)}, ${mysql.escape(contact)}, ${mysql.escape(pic)})`, (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                message:'data added successfully',
+                village_id,
+                village_lat,
+                village_lng,
+                name,
+                desc,
+                province,
+                regency,
+                district,
+                social_media,
+                contact,
+                pic
+            })
+        }
+    })
+})
+app.post('/maps/:id/activities', (req, res)=>{
+    const {id} = req.params
+    const activity_id = generateShortId()
+    const {activity_location, activity_name, activity_category, activity_level, activity_desc} = req.body
+    con.query(`INSERT INTO detail_activity VALUES (${mysql.escape(activity_id)},${mysql.escape(id)}, ${mysql.escape(activity_location)}, ${mysql.escape(activity_name)}, ${mysql.escape(activity_category)}, ${mysql.escape(activity_level)}, ${mysql.escape(activity_desc)})`, (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                message:'data added successfully',
+                activity_id,
+                id  ,
+                activity_location,
+                activity_name,
+                activity_category,
+                activity_level,
+                activity_desc
+            })
+        }
+    })
+})
 //questionnaire for admin 
 app.post('/questionnaire', (req, res) => {
     const quisioner_id = uuidv4()
@@ -190,7 +313,6 @@ app.post('/questionnaire', (req, res) => {
         }
     })
 })
-
 //quest for admin
 app.post('/quest', (req, res)=>{
     const quest_id = generateShortId()
