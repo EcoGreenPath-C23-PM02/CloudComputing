@@ -3,7 +3,7 @@ const app = express()
 const mysql = require('mysql')
 const { v4: uuidv4 } = require('uuid')
 const jwt = require('jsonwebtoken')
-
+const axios = require('axios')
 app.use(express.json())
 
 const con = mysql.createConnection({
@@ -178,7 +178,50 @@ app.get('/homepage/:id', (req, res) => {
         }
     })
 })
+app.get('/homepage/:id/cf_recommendation', (req, res) => {
+    const { id } = req.params
 
+    // Make a request to your CF recommendation Flask API endpoint with the current user ID
+    axios.get(`http://localhost:5000/homepage/${id}/cf_recommendation`, { params: { user_id: id } })
+        .then(response => {
+        // Handle the response from your CF recommendation Flask API
+            console.log(response.data)
+            res.json(response.data)
+        }).catch(error => {
+        // Handle any errors that occur during the request
+            console.error(error)
+            res.status(500).json({ error: 'An error occurred' })
+        })
+})
+
+app.get('/homepage/:id/cbf_recommendation', (req, res) => {
+    const { id } = req.params
+
+    // Fetch user data from the questionnaire_responses table
+    con.query(`SELECT * FROM questionnaire_responses WHERE user_id = ${mysql.escape(id)}`, (err, result) => {
+        if (err) {
+            res.status(500).json({ error: err })
+        }else if (result.length > 0) {
+            const questionnaireResponses = result[0] // Assume the questionnaire responses are stored in a single row
+
+            // Extract the necessary data from the questionnaire responses (e.g., a single column)
+            const columnData = questionnaireResponses.column_name // Replace 'column_name' with the actual column name in your table
+            // Make a request to your CBF recommendation Flask API endpoint with the extracted data
+            axios.post('http://localhost:5000/homepage/:id/cbf_recommendation', { column_data: columnData })
+                .then(response => {
+                // Handle the response from your CBF recommendation Flask API
+                    console.log(response.data)
+                    res.json(response.data)
+                }).catch(error => {
+                    // Handle any errors that occur during the request
+                    console.error(error)
+                    res.status(500).json({ error: 'An error occurred' })
+                })
+        }else {
+            res.status(404).json({ error: 'User data not found' })
+        }
+    })
+})
 //quest
 app.get('/quest', (req, res) => {
     con.query('SELECT * FROM quest_list', (err, result) =>{
