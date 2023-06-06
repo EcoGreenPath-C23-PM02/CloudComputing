@@ -17,46 +17,53 @@ const con = mysql.createConnection({
 app.post('/register', (req, res) => {
     const {username, firstName, lastName, phoneNumber, email, password, birth} = req.body
     // checking if the username exist
-    con.query(`SELECT * FROM user_table WHERE username = ${mysql.escape(username)}`, (err, result) => {
-        if(err){
-            res.status(500).json({
-                error: err
-            })
-            return
-        }if(result.length > 0){
-            res.status(400).json({
-                message: 'Username already exist'
-            })
-            return
-        }
-        // Generate a user ID
-        const userID = uuidv4()
-        // Create the user in the database
-        const createdAt = new Date()
-        con.query(`INSERT INTO user_table(user_id, username, email, password, phone_number, birth, firstName, lastName, createdAt) 
-                    VALUES (${mysql.escape(userID)}, ${mysql.escape(username)}, ${mysql.escape(email)}, ${mysql.escape(password)}, ${mysql.escape(phoneNumber)}, ${mysql.escape(birth)}, ${mysql.escape(firstName)}, ${mysql.escape(lastName)}, ${mysql.escape(createdAt)})`, (err) => {
-            if (err) {
+    try{
+        con.query(`SELECT * FROM user_table WHERE username = ${mysql.escape(username)}`, (err, result) => {
+            if(err){
                 res.status(500).json({
                     error: err
                 })
                 return
+            }if(result.length > 0){
+                res.status(400).json({
+                    message: 'Username already exist'
+                })
+                return
             }
-            // Successfully created the user
-            res.status(201).json({
-                message: 'Registration successful',
-                user: {
-                    userID,
-                    username,
-                    email,
-                    firstName,
-                    lastName,
-                    phoneNumber,
-                    birth,
-                    createdAt
+            // Generate a user ID
+            const userID = uuidv4()
+            // Create the user in the database
+            const createdAt = new Date()
+            con.query(`INSERT INTO user_table(user_id, username, email, password, phone_number, birth, firstName, lastName, createdAt) 
+                        VALUES (${mysql.escape(userID)}, ${mysql.escape(username)}, ${mysql.escape(email)}, ${mysql.escape(password)}, ${mysql.escape(phoneNumber)}, ${mysql.escape(birth)}, ${mysql.escape(firstName)}, ${mysql.escape(lastName)}, ${mysql.escape(createdAt)})`, (err) => {
+                if (err) {
+                    res.status(500).json({
+                        error: err.message
+                    })
+                    return
                 }
+                // Successfully created the user
+                res.status(201).json({
+                    message: 'Registration successful',
+                    user: {
+                        userID,
+                        username,
+                        email,
+                        firstName,
+                        lastName,
+                        phoneNumber,
+                        birth,
+                        createdAt
+                    }
+                })
             })
         })
-    })
+
+    }catch(error){
+        res.status(500).json({
+            error: error.message
+        })
+    }
 })
 
 //questionnaire
@@ -103,9 +110,11 @@ app.post('/login', (req, res) => {
         }else if(result.length !== 0){
             if(result[0].username == username && result[0].password == password) {
                 const token = jwt.sign(username, secret)
+                const user_id = result[0].user_id
                 res.status(200).json({
                     message: {
                         status : 'login success',
+                        user_id,
                         username,
                         password,
                         token
@@ -216,18 +225,30 @@ app.get('/maps', (req, res) =>{
 })
 app.get('/maps/:id', (req, res)=>{
     const {id} = req.params
-    con.query(`SELECT * FROM village WHERE village_id= ${mysql.escape(id)}`, (err, result) => {
+    con.query(`SELECT * FROM village WHERE village_id= ${mysql.escape(id)}`, (err, villageResult) => {
         if(err){
             res.status(500).json({
                 error:err
             })
-        }if(result){
-            res.status(200).json({
-                data:result
+        }else{
+            con.query(`SELECT * FROM detail_activity WHERE village_id = ${mysql.escape(id)}`, (err, activityResult) => {
+                if(err){
+                    res.status(500).json({
+                        error:err
+                    })
+                }else{
+                    res.status(200).json({
+                        data:{
+                            villageResult,
+                            activityResult
+                        }
+                    })
+                }
             })
         }
     })
 })
+
 app.get('/maps/:id/activities', (req, res)=>{
     const {id} = req.params
     con.query(`SELECT * FROM detail_activity WHERE village_id =${mysql.escape(id)}`, (err, result)=>{
@@ -342,4 +363,3 @@ const generateShortId = () => {
 app.listen(3000, () => {
     console.log('Server start on http://localhost:3000')
 })
-
