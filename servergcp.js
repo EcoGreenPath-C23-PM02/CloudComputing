@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid')
 const jwt = require('jsonwebtoken')
 const Multer = require('multer')
 const axios = require('axios')
+const bcrypt = require('bcrypt')
 
 app.use(express.json())
 
@@ -44,48 +45,63 @@ const multer = Multer({
 // register 
 app.post('/register', (req, res) => {
     const {username, firstName, lastName, phoneNumber, email, password, birth} = req.body
-    // checking if the username exist
     try{
-        con.query(`SELECT * FROM user_table WHERE username = ${mysql.escape(username)}`, (err, result) => {
-            if(err){
-                res.status(500).json({
-                    error: err
-                })
-                return
-            }if(result.length > 0){
-                res.status(400).json({
-                    message: 'Username already exist'
-                })
-                return
+        //hashing the password
+        bcrypt.genSalt(10, (err, salt) => {
+            if (err) {
+                return res.status(500).json({ error: 'Internal server error' })
             }
-            // Generate a user ID
-            const userID = uuidv4()
-            // Create the user in the database
-            const createdAt = new Date()
-            con.query(`INSERT INTO user_table(user_id, username, email, password, phone_number, birth, firstName, lastName, createdAt) 
-                        VALUES (${mysql.escape(userID)}, ${mysql.escape(username)}, ${mysql.escape(email)}, ${mysql.escape(password)}, ${mysql.escape(phoneNumber)}, ${mysql.escape(birth)}, ${mysql.escape(firstName)}, ${mysql.escape(lastName)}, ${mysql.escape(createdAt)})`, (err) => {
+            //hashing the password
+            bcrypt.hash(password, salt, (err, hash) => {
                 if (err) {
-                    res.status(500).json({
-                        error: err.message
-                    })
-                    return
+                    return res.status(500).json({ error: 'Internal server error' })
                 }
-                // Successfully created the user
-                res.status(201).json({
-                    message: 'Registration successful',
-                    user: {
-                        userID,
-                        username,
-                        email,
-                        firstName,
-                        lastName,
-                        phoneNumber,
-                        birth,
-                        createdAt
+                //look if username already exist
+                con.query(`SELECT * FROM user_table WHERE username = ${mysql.escape(username)}`, (err, result) => {
+                    if(err){
+                        res.status(500).json({
+                            error: err
+                        })
+                        return
+                    }if(result.length > 0){
+                        res.status(400).json({
+                            message: 'Username already exist'
+                        })
+                        return
                     }
+                    // Generate a user ID
+                    const userID = uuidv4()
+                    // Create the user in the database
+                    const createdAt = new Date()
+                    //insert to user_table new data
+                    con.query(`INSERT INTO user_table(user_id, username, email, password, phone_number, birth, firstName, lastName, createdAt) 
+                                VALUES (${mysql.escape(userID)}, ${mysql.escape(username)}, ${mysql.escape(email)}, ${mysql.escape(hash)}, ${mysql.escape(phoneNumber)}, ${mysql.escape(birth)}, ${mysql.escape(firstName)}, ${mysql.escape(lastName)}, ${mysql.escape(createdAt)})`, (err) => {
+                        if (err) {
+                            res.status(500).json({
+                                error: err.message
+                            })
+                            return
+                        }
+                        // Successfully created the user
+                        res.status(201).json({
+                            message: 'Registration successful',
+                            user: {
+                                userID,
+                                username,
+                                email,
+                                firstName,
+                                lastName,
+                                phoneNumber,
+                                birth,
+                                createdAt
+                            }
+                        })
+                    })
                 })
+
             })
         })
+        
 
     }catch(error){
         res.status(500).json({
@@ -128,35 +144,39 @@ app.post('/questionnaire/:id', (req, res) => {
 //login 
 const secret = 'this is secret'
 app.post('/login', (req, res) => {
-    const {username, password} = req.body
+    const { username, password } = req.body
+    //checking the username 
     con.query(`SELECT * FROM user_table WHERE username = ${mysql.escape(username)}`, (err, result) => {
-        if(err){
-            res.status(500).json({
-                error: 'the server encountered an unexpected condition that prevented it from fulfilling the request'
+        if (err) {
+            return res.status(500).json({ error: 'Internal server error' })
+        }
+        //authethicate the username and the password
+        if (result.length !== 0) {
+            const user = result[0]
+    
+            bcrypt.compare(password, user.password, (err, passwordMatch) => {
+                if (err) {
+                    return res.status(500).json({ error: 'Internal server error' })
+                }
+    
+                if (passwordMatch) {
+                    const token = jwt.sign({ username }, secret)
+                    const user_id = user.user_id
+
+                    return res.status(200).json({
+                        message: {
+                            status: 'Login successful',
+                            user_id,
+                            username,
+                            token
+                        }   
+                    })
+                } else {
+                    return res.status(401).json({ error: 'Invalid credentials' })
+                }
             })
-            return
-        }else if(result.length !== 0){
-            if(result[0].username == username && result[0].password == password) {
-                const token = jwt.sign(username, secret)
-                const user_id = result[0].user_id
-                res.status(200).json({
-                    message: {
-                        status : 'login success',
-                        user_id,
-                        username,
-                        password,
-                        token
-                    }
-                })
-            }else{
-                res.status(401).json({
-                    message:'wrong password'
-                })
-            }
-        }else{
-            res.status(401).json({
-                message:'login failed'
-            })
+        } else {
+            return res.status(401).json({ error: 'Invalid credentials' })
         }
     })
 })
@@ -210,7 +230,7 @@ app.get('/homepage/:id', (req, res) => {
 // Route untuk mendapatkan rekomendasi CF dari server Python
 app.get('/homepage/:id/cf_recommendation', (req, res) => {
     const userId = req.params.id
-    const pythonUrl = `replace this with theURL/homepage:${userId}/cf_recommendation` // Ganti dengan URL sesuai server Python
+    const pythonUrl = `replace this with /homepage:${userId}/cf_recommendation` // Ganti dengan URL sesuai server Python
     axios.get(pythonUrl)
         .then(response => {
             const recommendations = response.data.recommendations
@@ -224,7 +244,7 @@ app.get('/homepage/:id/cf_recommendation', (req, res) => {
 // Route untuk mendapatkan rekomendasi CBF dari server Python
 app.get('/homepage/:id/cbf_recommendation', (req, res) => {
     const userId = req.params.id
-    const pythonUrl = `replace this with theURL/homepage:${userId}/cbf_recommendation` // Ganti dengan URL sesuai server Python
+    const pythonUrl = `https://mlapi-dot-egp-dev-260523.uc.r.appspot.com/homepage:${userId}/cbf_recommendation` // Ganti dengan URL sesuai server Python
 
     axios.get(pythonUrl)
         .then(response => {
@@ -315,7 +335,7 @@ app.get('/maps', (req, res) =>{
 })
 app.get('/maps/:id', (req, res)=>{
     const {id} = req.params
-    con.query(`SELECT * FROM village WHERE village_id= ${mysql.escape(id)}`, (err, villageResult) => {
+    con.query(`SELECT * FROM detail_activity WHERE activity_id= ${mysql.escape(id)}`, (err, villageResult) => {
         if(err){
             res.status(500).json({
                 error:err
