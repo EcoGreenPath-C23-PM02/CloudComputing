@@ -153,7 +153,7 @@ app.post('/login', (req, res) => {
         //authethicate the username and the password
         if (result.length !== 0) {
             const user = result[0]
-    
+
             bcrypt.compare(password, user.password, (err, passwordMatch) => {
                 if (err) {
                     return res.status(500).json({ error: 'Internal server error' })
@@ -300,7 +300,7 @@ app.post('/quest/:id', multer.single('image'), (req, res) =>{
         blobStream.on('finish', () => {
             const imageUrl = `https://storage.googleapis.com/${bucketName}/${filename}`
             console.log('image uploaded successfully')
-            con.query(`INSERT INTO user_quest VALUES (${mysql.escape(id)}, ${mysql.escape(imageUrl)}, ${mysql.escape(user_desc)})`, (err, result) =>{
+            con.query(`INSERT INTO user_quest VALUES (${mysql.escape(id)}, ${mysql.escape(imageUrl)}, ${mysql.escape(user_desc)})`, (err) =>{
                 if (err) throw err
                 console.log('Image URL saved to the database')
                 res.status(200).send({
