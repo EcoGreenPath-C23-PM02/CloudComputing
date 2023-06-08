@@ -14,7 +14,7 @@ const con = mysql.createConnection({
     host: 'u dont know my host :)',
     user: 'u dont know my user too :)',
     password: 'is there any password?',
-    database: "hmm don't think u know my database :p"
+    database: 'hmm don\'t think u know my database :p'
 })
 //check if connect to database
 con.connect(function(err) {
@@ -224,6 +224,7 @@ app.put('/profile/:id/point', (req, res) => {
         }
     })
 })
+
 //homepage
 app.get('/homepage/:id', (req, res) => {
     const {id} = req.params
@@ -354,7 +355,7 @@ app.get('/maps/:id', (req, res)=>{
                 error:err
             })
         }else{
-            con.query(`SELECT * FROM detail_activity WHERE village_id = ${mysql.escape(id)}`, (err, activityResult) => {
+            con.query(`SELECT * FROM detail_activity WHERE village_id = ${mysql.escape(id)}`, (err) => {
                 if(err){
                     res.status(500).json({
                         error:err
@@ -362,8 +363,7 @@ app.get('/maps/:id', (req, res)=>{
                 }else{
                     res.status(200).json({
                         data:{
-                            villageResult,
-                            activityResult
+                            villageResult
                         }
                     })
                 }
@@ -386,6 +386,36 @@ app.get('/maps/:id/activities', (req, res)=>{
     })
 })
 
+
+//package
+app.get('/detail_package', (req, res)=>{
+    con.query('SELECT * FROM detail_package', (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                data:result
+            })
+        }
+    })
+})
+
+//activity
+app.get('/detail_activity', (req, res)=>{
+    con.query('SELECT * FROM detail_activity', (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                data:result
+            })
+        }
+    })
+})
 //maps for admin
 app.post('/maps', (req, res)=>{
     const village_id = generateShortId()
