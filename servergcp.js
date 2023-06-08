@@ -11,10 +11,10 @@ app.use(express.json())
 
 //connect to mysql database
 const con = mysql.createConnection({
-    host: '34.101.186.79',
-    user: 'root',
-    password: 'SomeDay010623',
-    database: 'ecogreenpath_db'
+    host: 'u dont know my host :)',
+    user: 'u dont know my user too :)',
+    password: 'is there any password?',
+    database: "hmm don't think u know my database :p"
 })
 //check if connect to database
 con.connect(function(err) {
@@ -98,11 +98,9 @@ app.post('/register', (req, res) => {
                         })
                     })
                 })
-
             })
         })
         
-
     }catch(error){
         res.status(500).json({
             error: error.message
@@ -207,6 +205,21 @@ app.put('/profile/:id', (req, res) => {
         }if(result){
             res.status(200).json({
                 message:'update data successfully'
+            })
+        }
+    })
+})
+app.put('/profile/:id/point', (req, res) => {
+    const {id} = req.params
+    const {point} = req.body
+    con.query(`UPDATE user_table SET point = ${mysql.escape(point)} WHERE user_id = ${mysql.escape(id)}`, (err, result) => {
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                message:'update point successfully'
             })
         }
     })
