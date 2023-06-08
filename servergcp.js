@@ -401,6 +401,20 @@ app.get('/detail_package', (req, res)=>{
         }
     })
 })
+app.get('/detail_package/:id', (req, res)=>{
+    const {id} = req.params
+    con.query(`SELECT * FROM detail_package WHERE pack_id = ${mysql.escape(id)}`, (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                data:result
+            })
+        }
+    })
+})
 
 //activity
 app.get('/detail_activity', (req, res)=>{
@@ -416,6 +430,21 @@ app.get('/detail_activity', (req, res)=>{
         }
     })
 })
+app.get('/detail_activity/:id', (req, res)=>{
+    const {id} = req.params
+    con.query(`SELECT * FROM detail_activity WHERE activity_id = ${mysql.escape(id)}`, (err, result)=>{
+        if(err){
+            res.status(500).json({
+                error:err
+            })
+        }if(result){
+            res.status(200).json({
+                data:result
+            })
+        }
+    })
+})
+
 //maps for admin
 app.post('/maps', (req, res)=>{
     const village_id = generateShortId()
